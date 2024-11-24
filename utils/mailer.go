@@ -1,24 +1,25 @@
-package main
+package mailer
 
 import (
 	"context"
 	"encoding/base64"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/gmail/v1"
+	"google.golang.org/api/option"
 )
 
-// Environment variables (replace with actual values or load from your env)
 var (
-	clientID     = "YOUR_CLIENT_ID"
-	clientSecret = "YOUR_CLIENT_SECRET"
-	redirectURL  = "YOUR_REDIRECT_URL"
-	accessToken  = "YOUR_ACCESS_TOKEN"
-	refreshToken = "YOUR_REFRESH_TOKEN"
+	clientID     = os.Getenv("MAIL_CLIENT_ID")
+	clientSecret = os.Getenv("MAIL_CLIENT_SECRET")
+	redirectURL  = os.Getenv("MAIL_REDIRECT_URL")
+	accessToken  = os.Getenv("MAIL_ACCESS_TOKEN")
+	refreshToken = os.Getenv("MAIL_REFRESH_TOKEN")
 )
 
 // Initialize OAuth2 configuration
@@ -37,7 +38,7 @@ func getToken() *oauth2.Token {
 	return &oauth2.Token{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
-		Expiry:       time.Now().Add(time.Hour), // Replace with actual expiry time if available
+		Expiry:       time.Now().Add(time.Hour),
 		TokenType:    "Bearer",
 	}
 }
@@ -48,18 +49,20 @@ func SendMail(content, to, from, subject string) {
 	oauthConfig := getOAuth2Config()
 	token := getToken()
 
-	// Create OAuth2 client
+	// Create HTTP client with OAuth2 token
 	client := oauthConfig.Client(ctx, token)
 
-	// Create Gmail service
-	service, err := gmail.New(client)
+	// Use NewService with the HTTP client
+	service, err := gmail.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
 		log.Fatalf("Unable to create Gmail service: %v", err)
 	}
 
 	// Compose the email
-	email := fmt.Sprintf("Content-Type: text/html; charset=\"UTF-8\"\nMIME-Version: 1.0\nContent-Transfer-Encoding: 7bit\nto: %s\nfrom: %s\nsubject: %s\n\n%s",
-		to, from, subject, content)
+	email := fmt.Sprintf(
+		"Content-Type: text/html; charset=\"UTF-8\"\nMIME-Version: 1.0\nContent-Transfer-Encoding: 7bit\nto: %s\nfrom: %s\nsubject: %s\n\n%s",
+		to, from, subject, content,
+	)
 
 	// Encode email in base64 (URL-safe)
 	rawMessage := base64.URLEncoding.EncodeToString([]byte(email))
@@ -74,13 +77,4 @@ func SendMail(content, to, from, subject string) {
 	}
 
 	fmt.Println("Email sent successfully!")
-}
-
-func main() {
-	SendMail(
-		"<h1>Hello from Go!</h1><p>This is a test email.</p>",
-		"recipient@example.com",
-		"your_email@example.com",
-		"Test Email from Go",
-	)
 }

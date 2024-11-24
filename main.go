@@ -16,7 +16,12 @@ func main() {
 
 	// Initialize routes with the database
 	routes.AlbumRoutes(router, db)
-
+	// mailer.SendMail(
+	// 	"<h1>Hello from Go!</h1><p>This is a test email.</p>",
+	// 	"hezronkimutai600@gmail.com",
+	// 	"hezronchelimo.hc@gmail.com",
+	// 	"Test Email from Go",
+	// )
 	// Run the server
 	router.Run("localhost:8080")
 }
